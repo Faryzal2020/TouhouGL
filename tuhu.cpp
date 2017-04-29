@@ -4,6 +4,7 @@
 #include <GL/glut.h>
 #include <windows.h>
 #include <stdbool.h>
+#include <math.h>
 #include <iostream>
 using namespace std;
 
@@ -49,6 +50,7 @@ class bulletList
         }
         void createBullet(int x, int y, int speed, int dir, int life)
         {
+            printf("test");
             bulletCount++;
             Bullet *temp = new Bullet;
             temp->x = x;
@@ -68,6 +70,7 @@ class bulletList
                 tail->next = temp;
                 tail = temp;
             }
+            printf("%d",bulletCount);
         }
         void drawBullets()
         {
@@ -75,9 +78,10 @@ class bulletList
             temp = head;
             while (temp != NULL)
             {
+                printf("draw");
                 glPushMatrix();
                 glTranslatef(temp->x,temp->y, 0);
-                glutSolidSphere(1.5,20,16)
+                glutSolidSphere(1.5,20,16);
                 glPopMatrix();
 
                 temp->x += temp->speed * sin(temp->direction*PI/180);
@@ -97,17 +101,16 @@ class bulletList
                 int age = current_frame_num - temp->birthFrame;
                 if (temp->lifeTime > age)
                 {
-                    switch (i)
+                    if (i == 1)
                     {
-                    case 1:
                         head = head->next;
                         del = temp;
                         temp = head;
                         delete del;
                         i--;
                         bulletCount--;
-                        break;
-                    case bulletCount:
+                    } else if (i == bulletCount)
+                    {
                         tail = previous;
                         previous->next = NULL;
                         del = temp;
@@ -115,15 +118,14 @@ class bulletList
                         delete del;
                         i--;
                         bulletCount--;
-                        break;
-                    default:
+                    } else
+                    {
                         previous->next = temp->next;
                         del = temp;
                         temp = temp->next;
                         delete del;
                         i--;
                         bulletCount--;
-                        break;
                     }
                 } else {
                     previous = temp;
@@ -171,17 +173,17 @@ void keyboard(void)
     if (SPkeyStates[GLUT_KEY_LEFT])
         player1.x -= player1.speed;
     if (keyStates['z'])
-        player1.speed = 1;
-    else
-        player1.speed = 2;
+    {
+        player1.shoot = true;
+    } else {
+        player1.shoot = false;
+    }
 
 }
 
 void keyPressed (unsigned char key, int x, int y)
 {
     keyStates[key] = true;
-    if (key == 'z')
-        player1.speed = 5;
 }
 
 void keyRelease (unsigned char key, int x, int y)
@@ -295,3 +297,4 @@ int main(int argc, char** argv)
     glutMainLoop();
     return 0;
 }
+

@@ -36,9 +36,7 @@
 			<Add library="glut32" />
 			<Add library="opengl32" />
 		</Linker>
-		<Unit filename="tuhu.cpp">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
+		<Unit filename="tuhu.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />
