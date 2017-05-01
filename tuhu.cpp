@@ -29,16 +29,47 @@ struct player {
 } player1;
 
 struct Bullet {
+    bool alive;
     double x;
     double y;
     double speed;
     double direction;
     int birthFrame;
     int lifeTime; //in frames
-    Bullet *next;
+    //Bullet *next;
 };
 
-class bulletList
+Bullet bulletList[9999] = {};
+
+int getEmptyIndex()
+{
+    int i;
+    for (i=0 ; i <= bulletCount ; i++)
+    {
+        if (!bulletList[i].alive)
+            return i;
+    }
+    if (i>bulletCount) {return -1;}
+}
+
+void createBullet(int x, int y, int speed, int dir, int life)
+{
+    bulletCount++;
+
+
+}
+
+void checkBulletsLife()
+{
+
+}
+
+void drawBullets()
+{
+
+}
+
+/*class bulletList
 {
     private:
         Bullet *head, *tail;
@@ -135,7 +166,7 @@ class bulletList
         }
 };
 bulletList onscreenBullets;
-
+*/
 
 
 void drawPlayer()
@@ -151,7 +182,7 @@ void playerShoots()
         int frame = current_frame_num - player1.lastShootFrame;
         if (frame >= player1.fire_rate)
         {
-            onscreenBullets.createBullet(player1.x, player1.y, 5, 0, 120);
+            createBullet(player1.x, player1.y, 5, 0, 120);
             player1.lastShootFrame = current_frame_num;
         }
     }
@@ -217,8 +248,8 @@ void display(void)
     glPopMatrix();
     playerShoots();
 
-    onscreenBullets.checkBulletsLife();
-    onscreenBullets.drawBullets();
+    checkBulletsLife();
+    drawBullets();
 
 
     glutSwapBuffers();

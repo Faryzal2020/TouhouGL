@@ -1,0 +1,11 @@
+# depslib dependency file v1.0
+1493468496 source:c:\users\fary2\documents\opengl\touhougl\tuhu.cpp
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<GL/glut.h>
+	<windows.h>
+	<stdbool.h>
+	<math.h>
+	<iostream>
+
