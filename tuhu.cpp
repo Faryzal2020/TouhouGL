@@ -8,14 +8,17 @@
 #include <iostream>
 using namespace std;
 
-#define target_fps 60
+#define target_fps 59
 #define PI 3.14159265
 bool SPkeyStates[256] = {false};
 bool keyStates[256] = {false};
+bool notFirstRun;
 double TPF = 1000.0 / target_fps;
 int start_time;
+int previous_frame_num;
 int current_frame_num;
 int bulletCount = 0;
+int maxArray = 0;
 
 double playerSpeed = 2;
 int fireRate = 10; //shots per second
@@ -55,119 +58,73 @@ int getEmptyIndex()
 void createBullet(int x, int y, int speed, int dir, int life)
 {
     bulletCount++;
-
+    maxArray++;
+    int i = getEmptyIndex();
+    bulletList[i].alive = true;
+    bulletList[i].x = x;
+    bulletList[i].y = y;
+    bulletList[i].speed = speed;
+    bulletList[i].direction = dir;
+    bulletList[i].lifeTime = life;
+    bulletList[i].birthFrame = current_frame_num;
 
 }
 
 void checkBulletsLife()
 {
-
+    int i;
+    //system("CLS");
+    //printf("\n Bullet Count: %d \n Max Array: %d", bulletCount, maxArray);
+    for (i=0 ; i <= maxArray ; i++)
+    {
+        //printf("\n Array no: %d", i);
+        if (bulletList[i].alive)
+        {
+            //printf("\n Alive");
+            int age = current_frame_num - bulletList[i].birthFrame;
+            //printf("\n Age: %d", age);
+            if (bulletList[i].lifeTime < age)
+            {
+                bulletList[i].alive = false;
+                bulletCount--;
+            }
+        } else {
+            //printf("\n Empty");
+        }
+    }
 }
 
 void drawBullets()
 {
+    int i;
+    for (i=0 ; i <= maxArray ; i++)
+    {
+        if (bulletList[i].alive)
+        {
+            glPushMatrix();
+            glColor3f(1,0.1,0.1);
+            glTranslatef(bulletList[i].x,bulletList[i].y,0);
+            glutSolidSphere(1.5,20,16);
+            glPopMatrix();
 
+            bulletList[i].x += bulletList[i].speed * sin(bulletList[i].direction*PI/180);
+            bulletList[i].y += bulletList[i].speed * cos(bulletList[i].direction*PI/180);
+        }
+    }
 }
 
-/*class bulletList
+void reduceArray()
 {
-    private:
-        Bullet *head, *tail;
-    public:
-        bulletList()
+    if (!bulletList[maxArray].alive && maxArray > 0)
+    {
+        if (maxArray <= bulletCount)
         {
-            head = NULL;
-            tail = NULL;
+            maxArray = bulletCount;
+        } else {
+            maxArray--;
         }
-        void createBullet(int x, int y, int speed, int dir, int life)
-        {
-            printf("test");
-            bulletCount++;
-            Bullet *temp = new Bullet;
-            temp->x = x;
-            temp->y = y;
-            temp->speed = speed;
-            temp->direction = dir;
-            temp->lifeTime = life;
-            temp->birthFrame = current_frame_num;
-            temp->next = NULL;
-
-            if (head == NULL)
-            {
-                head = temp;
-                tail = temp;
-                temp = NULL;
-            } else {
-                tail->next = temp;
-                tail = temp;
-            }
-            printf("%d",bulletCount);
-        }
-        void drawBullets()
-        {
-            Bullet *temp = new Bullet;
-            temp = head;
-            while (temp != NULL)
-            {
-                printf("draw");
-                glPushMatrix();
-                glTranslatef(temp->x,temp->y, 0);
-                glutSolidSphere(1.5,20,16);
-                glPopMatrix();
-
-                temp->x += temp->speed * sin(temp->direction*PI/180);
-                temp->y += temp->speed * cos(temp->direction*PI/180);
-
-                temp = temp->next;
-            }
-        }
-        void checkBulletsLife()
-        {
-            Bullet *temp = new Bullet;
-            Bullet *del = new Bullet;
-            Bullet *previous = new Bullet;
-            temp = head;
-            for (int i=1 ; temp!=NULL ; i++)
-            {
-                int age = current_frame_num - temp->birthFrame;
-                if (temp->lifeTime > age)
-                {
-                    if (i == 1)
-                    {
-                        head = head->next;
-                        del = temp;
-                        temp = head;
-                        delete del;
-                        i--;
-                        bulletCount--;
-                    } else if (i == bulletCount)
-                    {
-                        tail = previous;
-                        previous->next = NULL;
-                        del = temp;
-                        temp = tail;
-                        delete del;
-                        i--;
-                        bulletCount--;
-                    } else
-                    {
-                        previous->next = temp->next;
-                        del = temp;
-                        temp = temp->next;
-                        delete del;
-                        i--;
-                        bulletCount--;
-                    }
-                } else {
-                    previous = temp;
-                    temp = temp->next;
-                }
-            }
-        }
-};
-bulletList onscreenBullets;
-*/
-
+    }
+}
 
 void drawPlayer()
 {
@@ -182,10 +139,28 @@ void playerShoots()
         int frame = current_frame_num - player1.lastShootFrame;
         if (frame >= player1.fire_rate)
         {
-            createBullet(player1.x, player1.y, 5, 0, 120);
+            createBullet(player1.x, player1.y, 6, 0, 50); // x , y , speed , direction (degree) , life (in frames)
             player1.lastShootFrame = current_frame_num;
+            //printf("\n shoot");
         }
     }
+}
+
+///////////////////////////////
+//    BACKGROUND SECTION     //
+///////////////////////////////
+
+void drawBackground(int x1,int y1,int x2,int y2)
+{
+    int depth = 10;
+    glColor3f(0.2,0.2,0.2);
+    glBegin(GL_POLYGON);
+    glVertex3f(x1, y1, depth);
+    glVertex3f(x2, y1, depth);
+    glVertex3f(x2, y2, depth);
+    glVertex3f(x1, y2, depth);
+    glEnd();
+    glColor3f(1,1,1);
 }
 
 
@@ -243,6 +218,11 @@ void display(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
+    glTranslatef(0, 0, -210);
+    glRotatef(-20, 1, 0, 0);
+
+    drawBackground(-100,210,100,-130);
+
     glPushMatrix();
     drawPlayer();
     glPopMatrix();
@@ -250,6 +230,7 @@ void display(void)
 
     checkBulletsLife();
     drawBullets();
+    reduceArray();
 
 
     glutSwapBuffers();
@@ -273,47 +254,35 @@ void frameControl()
     waste_time = latest_frame_time - latest_rendering_time;
     if (waste_time > 0.0)
         Sleep(waste_time / 1000.0);
-
     current_frame_num = current_frame_num + 1;
 }
 
 void init()
 {
+    player1.y = -100;
     player1.speed = playerSpeed;
     player1.fire_rate = 60/fireRate;
 
     glClearColor( 0.0, 0.0, 0.0, 1.0);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
+    gluPerspective(75, (GLdouble)900.0/(GLdouble)600.0,0,10);
 
     start_time = glutGet(GLUT_ELAPSED_TIME);
     current_frame_num = 0;
+    glMatrixMode(GL_MODELVIEW);
 }
 
 void reshape(int w, int h)
 {
-    glViewport(0,0, (GLsizei) w, (GLsizei) h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    if (w<=h)
-        glOrtho(-100.0,100.0,
-                -100.0*(GLfloat)h/(GLfloat)w,
-                100.0*(GLfloat)h/(GLfloat)w,
-                -100.0,100.0);
-    else
-        glOrtho(-100.0*(GLfloat)w/(GLfloat)h,
-                100.0*(GLfloat)w/(GLfloat)h,
-                -100.0,100.0,
-                -100.0,100.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    glutReshapeWindow(900,600);
 }
 
 int main(int argc, char** argv)
 {
     glutInit(&argc, argv);
     glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(800,600);
+    glutInitWindowSize(900,600);
     glutInitWindowPosition(100,100);
     glutCreateWindow(argv[0]);
 
@@ -328,4 +297,5 @@ int main(int argc, char** argv)
     glutMainLoop();
     return 0;
 }
+
 
