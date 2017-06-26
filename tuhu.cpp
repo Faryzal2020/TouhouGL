@@ -10,7 +10,7 @@
 #include "headers/json/json.h"
 using namespace std;
 
-#define target_fps 59
+#define target_fps 100
 #define PI 3.14159265
 ifstream npcfile;
 ifstream pathfile;
@@ -18,6 +18,7 @@ ifstream stagefile;
 
 Json::Reader reader;
 Json::Value obj;
+bool shiftpress;
 bool SPkeyStates[256] = {false};
 bool keyStates[256] = {false};
 bool notFirstRun;
@@ -30,12 +31,25 @@ int maxArray = 0;
 int currentStage;
 int stagecount;
 
-double playerSpeed = 2;
-int fireRate = 20; //shots per second
+int previous_second = 0;
+int previous_frame_count = 0;
+int current_fps = 0;
+
+
+double playerSpeed = 3;
+int fireRate = 13; //shots per second
+double halfspeed = playerSpeed/2;
 
 bool play;
 bool menu;
 bool trans;
+
+struct border {
+    int top = 315;
+    int left = -150;
+    int right = 150;
+    int bottom = -185;
+} b;
 
 /*
 {"geometry":{"paths" : [[ [-100, 210], [-100,-130], [100,-130], [100,210],[-100,210] ],
@@ -228,10 +242,26 @@ void reduceArray()
     }
 }
 
+///////////////////////////////
+//      PLAYER SECTION       //
+///////////////////////////////
+
 void drawPlayer()
 {
     glTranslatef(player1.x, player1.y, 0);
     glutSolidSphere(5,20,16);
+}
+
+void bordercheck()
+{
+    if(player1.x < b.left)
+        player1.x = b.left;
+    if(player1.x > b.right)
+        player1.x = b.right;
+    if(player1.y < b.bottom)
+        player1.y = b.bottom;
+    if(player1.y > b.top)
+        player1.y = b.top;
 }
 
 void playerShoots()
@@ -241,7 +271,7 @@ void playerShoots()
         int frame = current_frame_num - player1.lastShootFrame;
         if (frame >= player1.fire_rate)
         {
-            createBullet(player1.x, player1.y, 6, 0, 50); // x , y , speed , direction (degree) , life (in frames)
+            createBullet(player1.x, player1.y, 10, 0, 50); // x , y , speed , direction (degree) , life (in frames)
             player1.lastShootFrame = current_frame_num;
             //printf("\n shoot");
         }
@@ -295,18 +325,33 @@ void stagePlay()
 void keyboard(void)
 {
     if (SPkeyStates[GLUT_KEY_UP])
+    {
         player1.y += player1.speed;
+    }
+
     if (SPkeyStates[GLUT_KEY_DOWN])
+    {
         player1.y -= player1.speed;
+    }
     if (SPkeyStates[GLUT_KEY_RIGHT])
+    {
         player1.x += player1.speed;
+    }
     if (SPkeyStates[GLUT_KEY_LEFT])
+    {
         player1.x -= player1.speed;
+    }
     if (keyStates['z'])
     {
         player1.shoot = true;
     } else {
         player1.shoot = false;
+    }
+    if (keyStates['c'])
+    {
+        player1.speed = halfspeed;
+    } else {
+        player1.speed = halfspeed*2;
     }
 
 }
@@ -338,14 +383,15 @@ void SPkeyRelease (int key, int x, int y)
 void display(void)
 {
     keyboard();
+    bordercheck();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(0, 0, -210);
+    glTranslatef(0, 0, -310);
     glRotatef(-20, 1, 0, 0);
 
-    drawBackground(-100,210,100,-130);
+    drawBackground(-150,315,150,-185);
 
     glPushMatrix();
     drawPlayer();
@@ -440,16 +486,27 @@ void loadFiles()
 
 void frameControl()
 {
-    double latest_frame_time, latest_rendering_time, waste_time;
+    double latest_frame_time, latest_rendering_time, waste_time, current_second;
 
     glutPostRedisplay();
 
-    latest_frame_time = start_time + (current_frame_num + 1) * TPF;
+    latest_frame_time = start_time + ((current_frame_num + 1) * TPF);
     latest_rendering_time = glutGet(GLUT_ELAPSED_TIME);
     waste_time = latest_frame_time - latest_rendering_time;
     if (waste_time > 0.0)
-        Sleep(waste_time / 1000.0);
+        Sleep(waste_time);
     current_frame_num = current_frame_num + 1;
+    /*
+    current_second = latest_rendering_time / 1000;
+    if( current_second >= previous_second + 1)
+    {
+        current_fps = current_frame_num - previous_frame_count;
+        previous_frame_count = current_frame_num;
+        previous_second = current_second;
+    }
+    system("CLS");
+    printf("%d \n %f", current_fps, waste_time);
+    */
 }
 
 void init()
@@ -462,7 +519,7 @@ void init()
     glClearColor( 0.0, 0.0, 0.0, 1.0);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(75, (GLdouble)900.0/(GLdouble)600.0,0,10);
+    gluPerspective(75, (GLdouble)900.0/(GLdouble)600.0,0,50);
 
     start_time = glutGet(GLUT_ELAPSED_TIME);
     current_frame_num = 0;
@@ -471,14 +528,14 @@ void init()
 
 void reshape(int w, int h)
 {
-    glutReshapeWindow(900,600);
+    glutReshapeWindow(1350,900);
 }
 
 int main(int argc, char** argv)
 {
     glutInit(&argc, argv);
     glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(900,600);
+    glutInitWindowSize(1350,900);
     glutInitWindowPosition(100,100);
     glutCreateWindow(argv[0]);
 
