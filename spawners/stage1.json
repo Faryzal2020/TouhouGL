@@ -1,0 +1,29 @@
+{
+	"spawnNodes":
+	[
+		{
+			"npcs":
+			[
+				{"id":0,"path":0},
+				{"id":0,"path":1}
+			],
+			"spawnAt":3
+		},
+		{
+			"npcs":
+			[
+				{"id":0,"path":0},
+				{"id":0,"path":1}
+			],
+			"spawnAt":3.1
+		},
+		{
+			"npcs":
+			[
+				{"id":0,"path":0},
+				{"id":0,"path":1}
+			],
+			"spawnAt":3.1
+		}
+	]
+}

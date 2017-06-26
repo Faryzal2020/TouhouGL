@@ -1,0 +1,15 @@
+{
+	"npcs":
+	[
+		{
+			"id":0,
+			"name":"Minion1",
+			"bpattern":0
+		},
+		{
+			"id":1,
+			"name":"Minion2",
+			"bpattern":1
+		}
+	]
+}

@@ -6,10 +6,18 @@
 #include <stdbool.h>
 #include <math.h>
 #include <iostream>
+#include <fstream>
+#include "headers/json/json.h"
 using namespace std;
 
 #define target_fps 59
 #define PI 3.14159265
+ifstream npcfile;
+ifstream pathfile;
+ifstream stagefile;
+
+Json::Reader reader;
+Json::Value obj;
 bool SPkeyStates[256] = {false};
 bool keyStates[256] = {false};
 bool notFirstRun;
@@ -19,9 +27,80 @@ int previous_frame_num;
 int current_frame_num;
 int bulletCount = 0;
 int maxArray = 0;
+int currentStage;
+int stagecount;
 
 double playerSpeed = 2;
-int fireRate = 10; //shots per second
+int fireRate = 20; //shots per second
+
+bool play;
+bool menu;
+bool trans;
+
+/*
+{"geometry":{"paths" : [[ [-100, 210], [-100,-130], [100,-130], [100,210],[-100,210] ],
+
+ [ [-70,220], [-70,160], [70, 140], [-70, 120], [70, 100], [70, -140] ]]}}
+*/
+
+///////////////////////////////
+//         JSON DATA         //
+///////////////////////////////
+
+struct stageList {
+    string name;
+};
+
+struct spawnNPC {
+    int npcid;
+    int pathid;
+};
+
+struct spawnNode {
+    spawnNPC npcs[10];
+    double spawnAt; //in seconds
+};
+
+struct spawnerList {
+    spawnNode s[9999];
+};
+
+struct npcTypes {
+    string graphic;
+};
+
+struct patternTypes {
+
+};
+
+struct pPList {
+    double x;
+    double y;
+    double speed;
+};
+
+struct pathList {
+    pPList p[100];
+};
+
+stageList stages[10] = {};
+spawnerList spawners[10] = {};
+npcTypes npcs[100] = {};
+pathList paths[100] = {};
+patternTypes patterns[100] = {};
+
+///////////////////////////////
+//         PLAY DATA         //
+///////////////////////////////
+
+struct stage {
+    int started_at; //in frames
+    bool passed;
+    int score;
+    int kills;
+    int prog;
+};
+
 struct player {
     double x;
     double y;
@@ -39,10 +118,33 @@ struct Bullet {
     double direction;
     int birthFrame;
     int lifeTime; //in frames
-    //Bullet *next;
 };
 
-Bullet bulletList[9999] = {};
+struct pathpoint{
+    bool passed;
+    double x;
+    double y;
+    double speed;
+};
+
+struct npcpath {
+    int id;
+    bool passed;
+    pathpoint p[100];
+};
+
+struct npc {
+    int id;
+    bool alive;
+    double x;
+    double y;
+    npcpath paths[100];
+};
+
+
+
+npc npcList[100] = {};
+Bullet bulletList[200] = {};
 
 int getEmptyIndex()
 {
@@ -147,6 +249,16 @@ void playerShoots()
 }
 
 ///////////////////////////////
+//        NPC SECTION        //
+///////////////////////////////
+
+void loadNPC()
+{
+
+}
+
+
+///////////////////////////////
 //    BACKGROUND SECTION     //
 ///////////////////////////////
 
@@ -161,6 +273,18 @@ void drawBackground(int x1,int y1,int x2,int y2)
     glVertex3f(x1, y2, depth);
     glEnd();
     glColor3f(1,1,1);
+}
+
+////////////////////////////////////
+//    STAGE CONTROLLER SECTION    //
+////////////////////////////////////
+
+void stagePlay()
+{
+    if(play)
+    {
+
+    }
 }
 
 
@@ -237,11 +361,82 @@ void display(void)
     glFlush();
 }
 
-
-
 ///////////////////////////////
 //      SYSTEM SECTION       //
 ///////////////////////////////
+
+void loadStages()
+{
+    reader.parse(stagefile, obj);
+    const Json::Value& fStages = obj["stages"];
+    stagecount = fStages.size();
+    for (unsigned int i = 0; i < fStages.size(); i++)
+    {
+        stages[i].name = fStages[i]["name"].asString();
+    }
+}
+
+void loadSpawners()
+{
+    for (int i = 0; i < stagecount; i++)
+    {
+        ifstream spawner;
+        switch(i)
+        {
+        case 0:
+            spawner.open("spawners/stage1.json");
+            break;
+        case 1:
+            spawner.open("spawners/stage2.json");
+            break;
+        default:
+            spawner.open("spawners/stage1.json");
+            break;
+        }
+
+        reader.parse(spawner, obj);
+        const Json::Value& fspawnNodes = obj["spawnNodes"];
+        for (int j = 0; j < fspawnNodes.size(); j++)
+        {
+            const Json::Value& fspawnNPC = fspawnNodes[j]["npcs"];
+            for (int k = 0; k < fspawnNPC.size(); k++)
+            {
+                spawners[i].s[j].npcs[k].npcid = fspawnNPC[k]["id"].asInt();
+                spawners[i].s[j].npcs[k].pathid = fspawnNPC[k]["path"].asInt();
+            }
+            spawners[i].s[j].spawnAt = fspawnNodes[j]["spawnAt"].asDouble();
+        }
+        spawner.close();
+        spawner.clear();
+    }
+}
+
+void loadPaths()
+{
+    reader.parse(pathfile, obj);
+    const Json::Value& fPaths = obj["stages"];
+    for (int i = 0; i < fPaths.size(); i++)
+    {
+        const Json::Value& fPPoints = fPaths["points"];
+        for (int j = 0; j < fPPoints.size(); j++)
+        {
+            paths[i].p[j].x = fPPoints[j]["x"].asDouble();
+            paths[i].p[j].y = fPPoints[j]["y"].asDouble();
+            paths[i].p[j].speed = fPPoints[j]["speed"].asDouble();
+        }
+    }
+}
+
+void loadFiles()
+{
+    npcfile.open("npcs.json");
+    pathfile.open("paths.json");
+    stagefile.open("stages.json");
+
+    loadStages();
+    loadSpawners();
+    loadPaths();
+}
 
 void frameControl()
 {
@@ -262,6 +457,7 @@ void init()
     player1.y = -100;
     player1.speed = playerSpeed;
     player1.fire_rate = 60/fireRate;
+    loadFiles();
 
     glClearColor( 0.0, 0.0, 0.0, 1.0);
     glMatrixMode(GL_PROJECTION);

@@ -36,6 +36,9 @@
 			<Add library="glut32" />
 			<Add library="opengl32" />
 		</Linker>
+		<Unit filename="headers/json/json-forwards.h" />
+		<Unit filename="headers/json/json.h" />
+		<Unit filename="jsoncpp.cpp" />
 		<Unit filename="tuhu.cpp" />
 		<Extensions>
 			<code_completion />

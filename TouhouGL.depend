@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1495021822 source:c:\users\fary\documents\opengl\touhougl\tuhu.cpp
+1496266467 source:c:\users\fary\documents\opengl\touhougl\tuhu.cpp
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
@@ -8,4 +8,82 @@
 	<stdbool.h>
 	<math.h>
 	<iostream>
+	<fstream>
+	"headers/json/json.h"
+
+1496249374 source:c:\users\fary\documents\opengl\touhougl\jsoncpp.cpp
+	"headers/json/json.h"
+	<clocale>
+	<json/assertions.h>
+	<json/reader.h>
+	<json/value.h>
+	"json_tool.h"
+	<utility>
+	<cstdio>
+	<cassert>
+	<cstring>
+	<istream>
+	<sstream>
+	<memory>
+	<set>
+	<limits>
+	<json/assertions.h>
+	<json/value.h>
+	<json/writer.h>
+	<math.h>
+	<sstream>
+	<utility>
+	<cstring>
+	<cassert>
+	<cpptl/conststring.h>
+	<cstddef>
+	<algorithm>
+	"json_valueiterator.inl"
+	<json/writer.h>
+	"json_tool.h"
+	<iomanip>
+	<memory>
+	<sstream>
+	<utility>
+	<set>
+	<cassert>
+	<cstring>
+	<cstdio>
+	<float.h>
+	<ieeefp.h>
+	<math.h>
+	<math.h>
+	<cmath>
+	<float.h>
+
+1496248995 c:\users\fary\documents\opengl\touhougl\headers\json\json.h
+	<stddef.h>
+	<string>
+	<stdint.h>
+	<cpptl/config.h>
+	"version.h"
+	"allocator.h"
+	"config.h"
+	"forwards.h"
+	"forwards.h"
+	<string>
+	<vector>
+	<exception>
+	<map>
+	<cpptl/smallmap.h>
+	<cpptl/forwards.h>
+	"features.h"
+	"value.h"
+	<deque>
+	<iosfwd>
+	<stack>
+	<string>
+	<istream>
+	"value.h"
+	<vector>
+	<string>
+	<ostream>
+	<stdlib.h>
+	<sstream>
+	"config.h"
 
