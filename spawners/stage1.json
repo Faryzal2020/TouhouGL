@@ -7,6 +7,7 @@
 				{"id":0,"path":0},
 				{"id":0,"path":1}
 			],
+			"npcCount":2,
 			"spawnAt":3
 		},
 		{
@@ -15,7 +16,8 @@
 				{"id":0,"path":0},
 				{"id":0,"path":1}
 			],
-			"spawnAt":3.1
+			"npcCount":2,
+			"spawnAt":10
 		},
 		{
 			"npcs":
@@ -23,7 +25,8 @@
 				{"id":0,"path":0},
 				{"id":0,"path":1}
 			],
-			"spawnAt":3.1
+			"npcCount":2,
+			"spawnAt":15
 		}
 	]
 }
