@@ -35,12 +35,9 @@
 			<Add library="glu32" />
 			<Add library="glut32" />
 			<Add library="opengl32" />
-			<Add library="C:/Program Files (x86)/GnuWin32/lib/freetype.lib" />
 		</Linker>
-		<Unit filename="headers/imageloader.h" />
 		<Unit filename="headers/json/json-forwards.h" />
 		<Unit filename="headers/json/json.h" />
-		<Unit filename="imageloader.cpp" />
 		<Unit filename="jsoncpp.cpp" />
 		<Unit filename="tuhu.cpp" />
 		<Extensions>

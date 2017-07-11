@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <GL/gl.h>
 #include <GL/glut.h>
 #include <windows.h>
 #include <stdbool.h>
@@ -222,12 +223,12 @@ void drawStatsBoard(float x, float y, float z )
     glRectf(x+p,y-p,x+w-p,y-h+p);
     glColor3f(1,1,1);
 
-    writeText(x+10,y-20,(void *)font, "Score: ");
+    writeText(tx,ty,(void *)font, "Score: ");
     const char *text = numToStr(player1.score).c_str();
-    writeText(x+10+hts,y-20,(void *)font, text);
-    writeText(x+10,y-20-vts,(void *)font, "Life : ");
+    writeText(tx+hts,ty,(void *)font, text);
+    writeText(tx,ty-vts,(void *)font, "Life : ");
     const char *text2 = numToStr(player1.life).c_str();
-    writeText(x+10+hts,y-20-vts,(void *)font, text2);
+    writeText(tx+hts,ty-vts,(void *)font, text2);
 }
 
 void drawMainMenu()
@@ -378,15 +379,10 @@ void drawBullets()
     for (i=0 ; i <= npcBMaxArray ; i++){
         if (NPCbulletList[i].alive){
             glPushMatrix();
-            glColor3f(1,0.1,0.1);
+            glColor3f(1.0,0.1,0.1);
             glTranslatef(NPCbulletList[i].x,NPCbulletList[i].y,0);
-            glutSolidSphere(NPCbulletList[i].rad,20,16);
+            glutSolidSphere(NPCbulletList[i].rad*2,20,16);
             glPopMatrix();
-            if (i==0){
-                printf("\n x: %f\n y: %f", NPCbulletList[i].x,NPCbulletList[i].x);
-                system("CLS");
-            }
-
 
             NPCbulletList[i].x += NPCbulletList[i].speed * sin(NPCbulletList[i].direction*PI/180);
             NPCbulletList[i].y += NPCbulletList[i].speed * cos(NPCbulletList[i].direction*PI/180);
