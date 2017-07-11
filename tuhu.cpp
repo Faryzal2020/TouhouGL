@@ -6,14 +6,20 @@
 #include <stdbool.h>
 #include <math.h>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include "headers/json/json.h"
+#include "headers/imageloader.h"
+
 using namespace std;
 
 #define target_fps 100
 #define PI 3.14159265
 ifstream npcfile;
 ifstream stagefile;
+ifstream bpatfile;
+
+
 
 Json::Reader reader;
 Json::Value obj;
@@ -37,7 +43,7 @@ float latest_frame_time;
 float latest_rendering_time;
 float waste_time;
 
-
+const int font = (int)GLUT_BITMAP_TIMES_ROMAN_24;
 
 double playerSpeed = 3;
 int fireRate = 13; //shots per second
@@ -85,17 +91,24 @@ struct spawnerList {
 };
 
 struct npcType {
-    string graphic;
+    float radius;
+    int health;
+    int bptype;
 };
 
 struct patternTypes {
-
+    int type;
+    int slice;
+    float rate;
+    float speed;
+    float rad;
 };
 
 struct pPList {
     double x;
     double y;
     double speed;
+    int shoot;
 };
 
 struct pathList {
@@ -104,9 +117,9 @@ struct pathList {
 
 stageList stages[10] = {};
 spawnerList spawners[10] = {};
-npcType npcTypes[100] = {};
+npcType npcTypes[10] = {};
 pathList paths[100] = {};
-patternTypes patterns[100] = {};
+patternTypes patterns[10] = {};
 
 ///////////////////////////////
 //         PLAY DATA         //
@@ -125,9 +138,14 @@ struct player {
     double x;
     double y;
     double speed;
+    bool alive;
     bool shoot;
+    bool immortal;
+    int radius;
     int fire_rate;
     int lastShootFrame;
+    int score;
+    int life;
 } player1;
 
 struct Bullet {
@@ -136,6 +154,7 @@ struct Bullet {
     double y;
     double speed;
     double direction;
+    float rad;
     int birthFrame;
     int lifeTime; //in frames
 };
@@ -145,100 +164,83 @@ struct npc {
     bool alive;
     double x;
     double y;
+    float rad;
+    int bptype;
+    int health;
     int pathID;
     int node = 0;
+    int lastShootFrame;
 };
 
 int npcCount = 0;
 int npcMaxArray = 0;
 int bulletCount = 0;
 int maxArray = 0;
+int npcBulletCount = 0;
+int npcBMaxArray = 0;
 npc npcList[100] = {};
-Bullet bulletList[200] = {};
+Bullet bulletList[100] = {};
+Bullet NPCbulletList[200] = {};
 
-int getEmptyIndex()
-{
-    int i;
-    for (i=0 ; i <= bulletCount ; i++)
-    {
-        if (!bulletList[i].alive)
-            return i;
+//////////////////////////////////////
+//      TEXT RENDERING SECTION      //
+//////////////////////////////////////
+
+void writeText(float x, float y, void *font, const char *text){
+    glPushMatrix();
+    const char *c;
+    glColor3f(1,1,1);
+    glRasterPos2f(x, y);
+    for (c=text; *c != '\0'; c++) {
+        glutBitmapCharacter(font, *c);
     }
-    if (i>bulletCount) {return -1;}
+    glPopMatrix();
 }
 
-void createBullet(int x, int y, int speed, int dir, int life)
+string numToStr(int num){
+    stringstream ss;
+    ss << num;
+    return ss.str();
+}
+
+//////////////////////////////////
+//         MENU SECTION         //
+//////////////////////////////////
+
+void drawStatsBoard(float x, float y, float z )
 {
-    bulletCount++;
-    maxArray++;
-    int i = getEmptyIndex();
-    bulletList[i].alive = true;
-    bulletList[i].x = x;
-    bulletList[i].y = y;
-    bulletList[i].speed = speed;
-    bulletList[i].direction = dir;
-    bulletList[i].lifeTime = life;
-    bulletList[i].birthFrame = current_frame_num;
+    float w = 120;
+    float h = 80;
+    float p = 2;
+    float tx = x+10;
+    float ty = y-20;
+    float vts = 15;
+    float hts = 60;
+    glColor3f(0.9,0.9,0.9);
+    glRectf(x,y,x+w,y-h);
+    glColor3f(0.1,0.1,0.1);
+    glRectf(x+p,y-p,x+w-p,y-h+p);
+    glColor3f(1,1,1);
 
+    writeText(x+10,y-20,(void *)font, "Score: ");
+    const char *text = numToStr(player1.score).c_str();
+    writeText(x+10+hts,y-20,(void *)font, text);
+    writeText(x+10,y-20-vts,(void *)font, "Life : ");
+    const char *text2 = numToStr(player1.life).c_str();
+    writeText(x+10+hts,y-20-vts,(void *)font, text2);
 }
 
-void checkBulletsLife()
+void drawMainMenu()
 {
-    int i;
-    //system("CLS");
-    //printf("\n Bullet Count: %d \n Max Array: %d", bulletCount, maxArray);
-    for (i=0 ; i <= maxArray ; i++)
-    {
-        //printf("\n Array no: %d", i);
-        if (bulletList[i].alive)
-        {
-            //printf("\n Alive");
-            int age = current_frame_num - bulletList[i].birthFrame;
-            //printf("\n Age: %d", age);
-            if (bulletList[i].lifeTime < age)
-            {
-                bulletList[i].alive = false;
-                bulletCount--;
-            }
-        } else {
-            //printf("\n Empty");
-        }
-    }
+
 }
 
-void drawBullets()
-{
-    int i;
-    for (i=0 ; i <= maxArray ; i++)
-    {
-        if (bulletList[i].alive)
-        {
-            glPushMatrix();
-            glColor3f(0.1,0.1,1);
-            glTranslatef(bulletList[i].x,bulletList[i].y,0);
-            glutSolidSphere(1.5,20,16);
-            glPopMatrix();
 
-            bulletList[i].x += bulletList[i].speed * sin(bulletList[i].direction*PI/180);
-            bulletList[i].y += bulletList[i].speed * cos(bulletList[i].direction*PI/180);
-        }
-    }
-}
+///////////////////////////////
+//      HITBOX SECTION       //
+///////////////////////////////
 
-void reduceArray()
-{
-    if (!bulletList[maxArray].alive && maxArray > 0)
-    {
-        if (maxArray <= bulletCount)
-        {
-            maxArray = bulletCount;
-        } else {
-            maxArray--;
-        }
-    }
-}
-
-float proximity(float Ax, float Ay, float Bx, float By)
+float proximity(float Ax, float Ay, float Bx, float By) //returns distance between A and B
 {
     float dx, dy;
     if(Ax >= Bx)
@@ -251,23 +253,207 @@ float proximity(float Ax, float Ay, float Bx, float By)
     else
         dy = By - Ay;
 
-    if(dx <= dy)
+    if(dx >= dy)
         return dx;
     else
         return dy;
+}
+
+int pBulletHitCheck(int i)
+{
+    for (int j = 0; j < npcMaxArray; j++){
+        if (npcList[j].alive){
+            float dist = proximity(bulletList[i].x,bulletList[i].y,npcList[j].x,npcList[j].y);
+            if (dist < npcList[j].rad + 1.5){ //bullet hit
+                npcList[j].health -= 1;
+                if (npcList[j].health <= 0){ //npc zero health
+                    npcList[j].alive = false;
+                    player1.score += 10;
+                }
+                bulletList[i].alive = false;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int nBulletHitCheck(int i)
+{
+    float dist = proximity(NPCbulletList[i].x,NPCbulletList[i].y,player1.x,player1.y);
+    if (dist < player1.radius + NPCbulletList[i].rad){ //bullet hit
+        if (!player1.immortal){
+            player1.alive = false;
+            player1.immortal = true;
+            player1.life--;
+            NPCbulletList[i].alive = false;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+//////////////////////////////////////
+//      PLAYER BULLET SECTION       //
+//////////////////////////////////////
+
+int getEmptyIndex()
+{
+    int i;
+    for (i=0 ; i <= bulletCount ; i++){
+        if (!bulletList[i].alive)
+            return i;
+    }
+    if (i>bulletCount) {return -1;}
+}
+
+void createBullet(int x, int y, float rad, int speed, int dir, int life)
+{
+    bulletCount++;
+    maxArray++;
+    int i = getEmptyIndex();
+    bulletList[i].alive = true;
+    bulletList[i].x = x;
+    bulletList[i].y = y;
+    bulletList[i].speed = speed;
+    bulletList[i].direction = dir;
+    bulletList[i].lifeTime = life;
+    bulletList[i].birthFrame = current_frame_num;
+    bulletList[i].rad = rad;
+
+}
+
+void checkBulletsLife()
+{
+    int i;
+    //system("CLS");
+    //printf("\n Bullet Count: %d \n Max Array: %d", bulletCount, maxArray);
+    for (i=0 ; i <= maxArray ; i++){
+        //printf("\n Array no: %d", i);
+        if (bulletList[i].alive){
+            //printf("\n Alive");
+            int hit = pBulletHitCheck(i);
+            if (!hit){
+                int age = current_frame_num - bulletList[i].birthFrame;
+                //printf("\n Age: %d", age);
+                if (bulletList[i].lifeTime < age){
+                    bulletList[i].alive = false;
+                    bulletCount--;
+                }
+            }
+        }
+    }
+
+    for (i=0 ; i <= npcBMaxArray ; i++){
+        if (NPCbulletList[i].alive){
+            int hit = nBulletHitCheck(i);
+            if (!hit){
+                if (NPCbulletList[i].x >= b.right || NPCbulletList[i].x <= b.left){
+                    NPCbulletList[i].alive = false;
+                    npcBulletCount--;
+                } else if (NPCbulletList[i].y >= b.top || NPCbulletList[i].y <= b.bottom){
+                    NPCbulletList[i].alive = false;
+                    npcBulletCount--;
+                }
+            }
+        }
+    }
+}
+
+void drawBullets()
+{
+    int i;
+    for (i=0 ; i <= maxArray ; i++){
+        if (bulletList[i].alive){
+            glPushMatrix();
+            glColor3f(0.1,0.1,1);
+            glTranslatef(bulletList[i].x,bulletList[i].y,0);
+            glutSolidSphere(bulletList[i].rad,20,16);
+            glPopMatrix();
+
+            bulletList[i].x += bulletList[i].speed * sin(bulletList[i].direction*PI/180);
+            bulletList[i].y += bulletList[i].speed * cos(bulletList[i].direction*PI/180);
+        }
+    }
+    for (i=0 ; i <= npcBMaxArray ; i++){
+        if (NPCbulletList[i].alive){
+            glPushMatrix();
+            glColor3f(1,0.1,0.1);
+            glTranslatef(NPCbulletList[i].x,NPCbulletList[i].y,0);
+            glutSolidSphere(NPCbulletList[i].rad,20,16);
+            glPopMatrix();
+            if (i==0){
+                printf("\n x: %f\n y: %f", NPCbulletList[i].x,NPCbulletList[i].x);
+                system("CLS");
+            }
+
+
+            NPCbulletList[i].x += NPCbulletList[i].speed * sin(NPCbulletList[i].direction*PI/180);
+            NPCbulletList[i].y += NPCbulletList[i].speed * cos(NPCbulletList[i].direction*PI/180);
+        }
+    }
+}
+
+void reduceArray()
+{
+    if (!bulletList[maxArray].alive && maxArray > 0){
+        if (maxArray <= bulletCount){
+            maxArray = bulletCount;
+        } else {
+            maxArray--;
+        }
+    }
+
+    if (!NPCbulletList[npcBMaxArray].alive && npcBMaxArray > 0){
+        if (npcBMaxArray <= npcBulletCount){
+            npcBMaxArray = npcBulletCount;
+        } else {
+            npcBMaxArray--;
+        }
+    }
 }
 
 ///////////////////////////////
 //      PLAYER SECTION       //
 ///////////////////////////////
 
+void playerShoots()
+{
+    if (player1.shoot)
+    {
+        int frame = current_frame_num - player1.lastShootFrame;
+        if (frame >= player1.fire_rate)
+        {
+            createBullet(player1.x, player1.y, 1.5, 10, 0, 50); // x , y , speed , direction (degree) , life (in frames)
+            player1.lastShootFrame = current_frame_num;
+            //printf("\n shoot");
+        }
+    }
+}
+
 void drawPlayer()
 {
+    playerShoots();
     glPushMatrix();
     glColor3f(0.1,1,0.1);
     glTranslatef(player1.x, player1.y, 0);
-    glutSolidSphere(5,20,16);
+    glutSolidSphere(player1.radius,20,16);
     glPopMatrix();
+}
+
+void spawnPlayer()
+{
+    if (player1.y < -100){
+        player1.y += player1.speed/1.5;
+        glPushMatrix();
+        glColor3f(0.1,1,0.1);
+        glTranslatef(player1.x, player1.y, 0);
+        glutSolidSphere(player1.radius,20,16);
+        glPopMatrix();
+    } else {
+        player1.immortal = false;
+        player1.alive = true;
+    }
 }
 
 void bordercheck()
@@ -282,17 +468,54 @@ void bordercheck()
         player1.y = b.top;
 }
 
-void playerShoots()
+///////////////////////////////////
+//      NPC BULLET SECTION       //
+///////////////////////////////////
+
+int npcgetEmptyIndex()
 {
-    if (player1.shoot)
+    int i;
+    for (i=0 ; i <= npcBulletCount ; i++){
+        if (!NPCbulletList[i].alive)
+            return i;
+    }
+    if (i>npcBulletCount) {return -1;}
+}
+
+void createNpcBullet(int x, int y, float rad, float speed, float dir)
+{
+    npcBulletCount++;
+    npcBMaxArray++;
+    int i = npcgetEmptyIndex();
+    NPCbulletList[i].alive = true;
+    NPCbulletList[i].x = x;
+    NPCbulletList[i].y = y;
+    NPCbulletList[i].rad = rad;
+    NPCbulletList[i].speed = speed;
+    NPCbulletList[i].direction = dir;
+    NPCbulletList[i].lifeTime = 0;
+    NPCbulletList[i].birthFrame = current_frame_num;
+
+}
+
+void NPCshoot(int i, int patternID)
+{
+    int frame = current_frame_num - npcList[i].lastShootFrame;
+    if (frame >= patterns[patternID].rate)
     {
-        int frame = current_frame_num - player1.lastShootFrame;
-        if (frame >= player1.fire_rate)
-        {
-            createBullet(player1.x, player1.y, 10, 0, 50); // x , y , speed , direction (degree) , life (in frames)
-            player1.lastShootFrame = current_frame_num;
-            //printf("\n shoot");
+        if(patterns[patternID].type == 0){
+            float dir = atan2(player1.y-npcList[i].y,player1.x-npcList[i].x) * 180/PI;
+            createNpcBullet(npcList[i].x, npcList[i].y, patterns[patternID].rad, patterns[patternID].speed, dir);
+        } else {
+            float dir = 360/patterns[patternID].slice;
+            float dir2;
+            for(int j = 0; j < patterns[patternID].slice; j++){
+                dir2 = dir2 + dir;
+                createNpcBullet(npcList[i].x, npcList[i].y, patterns[patternID].rad, patterns[patternID].speed, dir2);
+            }
         }
+
+        npcList[i].lastShootFrame = current_frame_num;
     }
 }
 
@@ -331,7 +554,10 @@ void spawnNPC(int npcid, int pathid)
     int i = NPCgetEmptyIndex();
     npcList[i].alive = true;
     npcList[i].id = npcid;
+    npcList[i].rad = npcTypes[npcid].radius;
+    npcList[i].health = npcTypes[npcid].health;
     npcList[i].pathID = pathid;
+    npcList[i].bptype = npcTypes[npcid].bptype;
     npcList[i].x = paths[pathid].p[0].x;
     npcList[i].y = paths[pathid].p[0].y;
     npcList[i].node = 1;
@@ -354,7 +580,7 @@ int moveNPC(int npcid, float x, float y, float speed)
     glPushMatrix();
     glColor3f(1,0.1,0.1);
     glTranslatef(npcList[npcid].x,npcList[npcid].y,0);
-    glutSolidSphere(5,20,16);
+    glutSolidSphere(npcList[npcid].rad,20,16);
     glPopMatrix();
 
     float prox = proximity(npcList[npcid].x,npcList[npcid].y,x,y);
@@ -373,6 +599,10 @@ void drawNPC()
         {
             int pathid = npcList[i].pathID;
             int node = npcList[i].node;
+            if(paths[pathid].p[node].shoot)
+            {
+                NPCshoot(i,npcList[i].bptype);
+            }
             int pass = moveNPC(i,
                     paths[pathid].p[node].x,
                     paths[pathid].p[node].y,
@@ -452,36 +682,36 @@ void test()
 
 void keyboard(void)
 {
-    if (SPkeyStates[GLUT_KEY_UP])
-    {
-        player1.y += player1.speed;
+    if (player1.alive){
+        if (SPkeyStates[GLUT_KEY_UP])
+        {
+            player1.y += player1.speed;
+        }
+        if (SPkeyStates[GLUT_KEY_DOWN])
+        {
+            player1.y -= player1.speed;
+        }
+        if (SPkeyStates[GLUT_KEY_RIGHT])
+        {
+            player1.x += player1.speed;
+        }
+        if (SPkeyStates[GLUT_KEY_LEFT])
+        {
+            player1.x -= player1.speed;
+        }
+        if (keyStates['x'])
+        {
+            player1.shoot = true;
+        } else {
+            player1.shoot = false;
+        }
+        if (keyStates['z'])
+        {
+            player1.speed = halfspeed;
+        } else {
+            player1.speed = halfspeed*2;
+        }
     }
-
-    if (SPkeyStates[GLUT_KEY_DOWN])
-    {
-        player1.y -= player1.speed;
-    }
-    if (SPkeyStates[GLUT_KEY_RIGHT])
-    {
-        player1.x += player1.speed;
-    }
-    if (SPkeyStates[GLUT_KEY_LEFT])
-    {
-        player1.x -= player1.speed;
-    }
-    if (keyStates['z'])
-    {
-        player1.shoot = true;
-    } else {
-        player1.shoot = false;
-    }
-    if (keyStates['c'])
-    {
-        player1.speed = halfspeed;
-    } else {
-        player1.speed = halfspeed*2;
-    }
-
 }
 
 void keyPressed (unsigned char key, int x, int y)
@@ -505,34 +735,53 @@ void SPkeyRelease (int key, int x, int y)
 }
 
 ///////////////////////////////
-//      DISPLAY SECTION       //
+//      DISPLAY SECTION      //
 ///////////////////////////////
 
 void display(void)
 {
-    //test();
 
-    keyboard();
-    bordercheck();
+    //test();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(0, 0, -310);
-    glRotatef(-20, 1, 0, 0);
+    if(play == true){
+        keyboard();
+        bordercheck();
 
-    drawBackground(-150,315,150,-185);
+        glTranslatef(0, 0, -310);
+        drawStatsBoard(180, 180, 10);
+        glLoadIdentity();
 
-    stagePlay();
+        glTranslatef(0, 0, -310);
+        glRotatef(-20, 1, 0, 0);
 
-    drawNPC();
-    drawPlayer();
-    playerShoots();
+        drawBackground(-150,315,150,-185);
 
-    checkBulletsLife();
-    drawBullets();
-    reduceArray();
 
+
+        stagePlay();
+
+        drawNPC();
+
+        if (player1.alive){
+            drawPlayer();
+        } else {
+            spawnPlayer();
+        }
+
+        checkBulletsLife();
+        drawBullets();
+        reduceArray();
+
+
+
+
+    } else if (menu == true){
+        glTranslatef(0,0, -100);
+        drawMainMenu();
+    }
 
     glutSwapBuffers();
     glFlush();
@@ -551,6 +800,38 @@ void loadStages()
     {
         stages[i].name = fStages[i]["name"].asString();
     }
+    stagefile.close();
+    stagefile.clear();
+}
+
+void loadNPC()
+{
+    reader.parse(npcfile, obj);
+    const Json::Value& fNpcs = obj["npcs"];
+    for (unsigned int i = 0; i < fNpcs.size(); i++)
+    {
+        npcTypes[i].radius = fNpcs[i]["rad"].asFloat();
+        npcTypes[i].health = fNpcs[i]["hp"].asInt();
+        npcTypes[i].bptype = fNpcs[i]["bpattern"].asInt();
+    }
+    npcfile.close();
+    npcfile.clear();
+}
+
+void loadBPatterns()
+{
+    reader.parse(bpatfile, obj);
+    const Json::Value& fbpat = obj["bpattern"];
+    for (unsigned int i = 0; i < fbpat.size(); i++)
+    {
+        patterns[i].type = fbpat[i]["type"].asInt();
+        patterns[i].slice = fbpat[i]["slice"].asInt();
+        patterns[i].rate = 60/fbpat[i]["rate"].asFloat();
+        patterns[i].speed = fbpat[i]["speed"].asFloat();
+        patterns[i].rad = fbpat[i]["rad"].asFloat();
+    }
+    bpatfile.close();
+    bpatfile.clear();
 }
 
 void loadPath()
@@ -568,6 +849,7 @@ void loadPath()
             paths[j].p[k].x = fspawnNPC[k]["x"].asDouble();
             paths[j].p[k].y = fspawnNPC[k]["y"].asDouble();
             paths[j].p[k].speed = fspawnNPC[k]["speed"].asDouble();
+            paths[j].p[k].shoot = fspawnNPC[k]["shoot"].asInt();
         }
     }
     pathf.close();
@@ -614,10 +896,14 @@ void loadFiles()
 {
     npcfile.open("data/npcs.json");
     stagefile.open("data/stages.json");
+    bpatfile.open("data/bpattern.json");
 
     loadStages();
     loadPath();
     loadSpawners();
+    loadNPC();
+    loadBPatterns();
+    printf("\nLoadfiles");
 }
 
 void frameControl()
@@ -646,7 +932,13 @@ void frameControl()
 
 void init()
 {
-    player1.y = -100;
+    play = true;
+    //menu = true;
+    player1.radius = 8;
+    player1.immortal = true;
+    player1.y = -200;
+    player1.score = 0;
+    player1.life = 3;
     player1.speed = playerSpeed;
     player1.fire_rate = 60/fireRate;
     loadFiles();

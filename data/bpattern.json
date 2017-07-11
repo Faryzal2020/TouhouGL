@@ -1,0 +1,19 @@
+{
+	"bpattern":
+	[
+		{
+			"type":0,
+			"slice":3,
+			"rate":2,
+			"speed":1,
+			"size":3
+		},
+		{
+			"type":1,
+			"slice":6,
+			"rate":1,
+			"speed":0.2,
+			"size":8
+		}
+	]
+}

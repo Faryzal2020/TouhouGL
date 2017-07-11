@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1498549029 source:c:\users\fary\documents\opengl\touhougl\tuhu.cpp
+1499798395 source:c:\users\fary\documents\opengl\touhougl\tuhu.cpp
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
@@ -8,8 +8,10 @@
 	<stdbool.h>
 	<math.h>
 	<iostream>
+	<sstream>
 	<fstream>
 	"headers/json/json.h"
+	"headers/imageloader.h"
 
 1496249374 source:c:\users\fary\documents\opengl\touhougl\jsoncpp.cpp
 	"headers/json/json.h"
@@ -86,4 +88,12 @@
 	<stdlib.h>
 	<sstream>
 	"config.h"
+
+1499683998 source:c:\users\fary\documents\opengl\touhougl\imageloader.cpp
+	<windows.h>
+	<assert.h>
+	<fstream>
+	"headers/imageloader.h"
+
+1496127603 c:\users\fary\documents\opengl\touhougl\headers\imageloader.h
 

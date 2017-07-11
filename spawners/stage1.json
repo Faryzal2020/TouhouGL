@@ -17,7 +17,40 @@
 				{"id":0,"path":1}
 			],
 			"npcCount":2,
-			"spawnAt":10
+			"spawnAt":4
+		},
+		{
+			"npcs":
+			[
+				{"id":0,"path":0},
+				{"id":0,"path":1},
+				{"id":0,"path":2},
+				{"id":0,"path":3}
+			],
+			"npcCount":4,
+			"spawnAt":5
+		},
+		{
+			"npcs":
+			[
+				{"id":0,"path":0},
+				{"id":0,"path":1},
+				{"id":0,"path":2},
+				{"id":0,"path":3}
+			],
+			"npcCount":4,
+			"spawnAt":6
+		},
+		{
+			"npcs":
+			[
+				{"id":0,"path":0},
+				{"id":0,"path":1},
+				{"id":0,"path":2},
+				{"id":0,"path":3}
+			],
+			"npcCount":4,
+			"spawnAt":7
 		},
 		{
 			"npcs":
@@ -26,7 +59,45 @@
 				{"id":0,"path":1}
 			],
 			"npcCount":2,
-			"spawnAt":15
+			"spawnAt":8
+		},
+		{
+			"npcs":
+			[
+				{"id":0,"path":0},
+				{"id":0,"path":1}
+			],
+			"npcCount":2,
+			"spawnAt":10
+		},
+		{
+			"npcs":
+			[
+				{"id":0,"path":0},
+				{"id":0,"path":1},
+				{"id":0,"path":2}
+			],
+			"npcCount":3,
+			"spawnAt":11
+		},
+		{
+			"npcs":
+			[
+				{"id":0,"path":0},
+				{"id":0,"path":1},
+				{"id":0,"path":3}
+			],
+			"npcCount":3,
+			"spawnAt":12
+		},
+		{
+			"npcs":
+			[
+				{"id":0,"path":0},
+				{"id":0,"path":1}
+			],
+			"npcCount":2,
+			"spawnAt":10
 		}
 	]
 }

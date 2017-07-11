@@ -2,13 +2,13 @@
 	"npcs":
 	[
 		{
-			"id":0,
-			"name":"Minion1",
+			"rad":10,
+			"hp":5,
 			"bpattern":0
 		},
 		{
-			"id":1,
-			"name":"Minion2",
+			"rad":15,
+			"hp":20,
 			"bpattern":1
 		}
 	]
