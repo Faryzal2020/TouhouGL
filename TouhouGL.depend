@@ -181,7 +181,7 @@
 	<sstream>
 	"config.h"
 
-1499803836 source:c:\users\fary2\documents\opengl\touhougl\tuhu.cpp
+1499812241 source:c:\users\fary2\documents\opengl\touhougl\tuhu.cpp
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
@@ -194,5 +194,4 @@
 	<sstream>
 	<fstream>
 	"headers/json/json.h"
-	"headers/imageloader.h"
 

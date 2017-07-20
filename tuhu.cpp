@@ -10,7 +10,6 @@
 #include <sstream>
 #include <fstream>
 #include "headers/json/json.h"
-#include "headers/imageloader.h"
 
 using namespace std;
 
@@ -156,6 +155,7 @@ struct Bullet {
     double speed;
     double direction;
     float rad;
+    int owner;
     int birthFrame;
     int lifeTime; //in frames
 };
@@ -181,7 +181,6 @@ int npcBulletCount = 0;
 int npcBMaxArray = 0;
 npc npcList[100] = {};
 Bullet bulletList[100] = {};
-Bullet NPCbulletList[200] = {};
 
 //////////////////////////////////////
 //      TEXT RENDERING SECTION      //
@@ -208,6 +207,16 @@ string numToStr(int num){
 //         MENU SECTION         //
 //////////////////////////////////
 
+int getNPCBullet()
+{
+    int i;
+    for (i=0; i <= maxArray ; i++){
+        if (bulletList[i].alive && bulletList[i].owner == 0){
+            return i;
+        }
+    }
+}
+
 void drawStatsBoard(float x, float y, float z )
 {
     float w = 120;
@@ -226,9 +235,18 @@ void drawStatsBoard(float x, float y, float z )
     writeText(tx,ty,(void *)font, "Score: ");
     const char *text = numToStr(player1.score).c_str();
     writeText(tx+hts,ty,(void *)font, text);
+
     writeText(tx,ty-vts,(void *)font, "Life : ");
     const char *text2 = numToStr(player1.life).c_str();
     writeText(tx+hts,ty-vts,(void *)font, text2);
+
+    int id = getNPCBullet();
+    writeText(tx,ty-2*vts,(void *)font, "NPCB x: ");
+    const char *text3 = numToStr(bulletList[id].x).c_str();
+    writeText(tx+hts,ty-2*vts,(void *)font, text3);
+    writeText(tx,ty-3*vts,(void *)font, "NPCB y: ");
+    const char *text4 = numToStr(bulletList[id].y).c_str();
+    writeText(tx+hts,ty-3*vts,(void *)font, text4);
 }
 
 void drawMainMenu()
@@ -281,13 +299,13 @@ int pBulletHitCheck(int i)
 
 int nBulletHitCheck(int i)
 {
-    float dist = proximity(NPCbulletList[i].x,NPCbulletList[i].y,player1.x,player1.y);
-    if (dist < player1.radius + NPCbulletList[i].rad){ //bullet hit
+    float dist = proximity(bulletList[i].x,bulletList[i].y,player1.x,player1.y);
+    if (dist < player1.radius + bulletList[i].rad){ //bullet hit
         if (!player1.immortal){
             player1.alive = false;
             player1.immortal = true;
             player1.life--;
-            NPCbulletList[i].alive = false;
+            bulletList[i].alive = false;
             return 1;
         }
     }
@@ -308,7 +326,7 @@ int getEmptyIndex()
     if (i>bulletCount) {return -1;}
 }
 
-void createBullet(int x, int y, float rad, int speed, int dir, int life)
+void createBullet(int x, int y, float rad, float speed, float dir, int life, int owner)
 {
     bulletCount++;
     maxArray++;
@@ -321,6 +339,7 @@ void createBullet(int x, int y, float rad, int speed, int dir, int life)
     bulletList[i].lifeTime = life;
     bulletList[i].birthFrame = current_frame_num;
     bulletList[i].rad = rad;
+    bulletList[i].owner = owner;
 
 }
 
@@ -333,28 +352,26 @@ void checkBulletsLife()
         //printf("\n Array no: %d", i);
         if (bulletList[i].alive){
             //printf("\n Alive");
-            int hit = pBulletHitCheck(i);
-            if (!hit){
-                int age = current_frame_num - bulletList[i].birthFrame;
-                //printf("\n Age: %d", age);
-                if (bulletList[i].lifeTime < age){
-                    bulletList[i].alive = false;
-                    bulletCount--;
+            if (bulletList[i].owner == 0){
+                int hit = pBulletHitCheck(i);
+                if (!hit){
+                    int age = current_frame_num - bulletList[i].birthFrame;
+                    //printf("\n Age: %d", age);
+                    if (bulletList[i].lifeTime < age){
+                        bulletList[i].alive = false;
+                        bulletCount--;
+                    }
                 }
-            }
-        }
-    }
-
-    for (i=0 ; i <= npcBMaxArray ; i++){
-        if (NPCbulletList[i].alive){
-            int hit = nBulletHitCheck(i);
-            if (!hit){
-                if (NPCbulletList[i].x >= b.right || NPCbulletList[i].x <= b.left){
-                    NPCbulletList[i].alive = false;
-                    npcBulletCount--;
-                } else if (NPCbulletList[i].y >= b.top || NPCbulletList[i].y <= b.bottom){
-                    NPCbulletList[i].alive = false;
-                    npcBulletCount--;
+            } else if (bulletList[i].owner == 1){
+                int hit = nBulletHitCheck(i);
+                if (!hit){
+                    if (bulletList[i].x >= b.right || bulletList[i].x <= b.left){
+                        bulletList[i].alive = false;
+                        bulletCount--;
+                    } else if (bulletList[i].y >= b.top || bulletList[i].y <= b.bottom){
+                        bulletList[i].alive = false;
+                        bulletCount--;
+                    }
                 }
             }
         }
@@ -376,18 +393,6 @@ void drawBullets()
             bulletList[i].y += bulletList[i].speed * cos(bulletList[i].direction*PI/180);
         }
     }
-    for (i=0 ; i <= npcBMaxArray ; i++){
-        if (NPCbulletList[i].alive){
-            glPushMatrix();
-            glColor3f(1.0,0.1,0.1);
-            glTranslatef(NPCbulletList[i].x,NPCbulletList[i].y,0);
-            glutSolidSphere(NPCbulletList[i].rad*2,20,16);
-            glPopMatrix();
-
-            NPCbulletList[i].x += NPCbulletList[i].speed * sin(NPCbulletList[i].direction*PI/180);
-            NPCbulletList[i].y += NPCbulletList[i].speed * cos(NPCbulletList[i].direction*PI/180);
-        }
-    }
 }
 
 void reduceArray()
@@ -397,14 +402,6 @@ void reduceArray()
             maxArray = bulletCount;
         } else {
             maxArray--;
-        }
-    }
-
-    if (!NPCbulletList[npcBMaxArray].alive && npcBMaxArray > 0){
-        if (npcBMaxArray <= npcBulletCount){
-            npcBMaxArray = npcBulletCount;
-        } else {
-            npcBMaxArray--;
         }
     }
 }
@@ -420,7 +417,7 @@ void playerShoots()
         int frame = current_frame_num - player1.lastShootFrame;
         if (frame >= player1.fire_rate)
         {
-            createBullet(player1.x, player1.y, 1.5, 10, 0, 50); // x , y , speed , direction (degree) , life (in frames)
+            createBullet(player1.x, player1.y, 1.5, 10, 0, 50, 0); // x , y , rad, speed , direction (degree) , life (in frames)
             player1.lastShootFrame = current_frame_num;
             //printf("\n shoot");
         }
@@ -468,32 +465,6 @@ void bordercheck()
 //      NPC BULLET SECTION       //
 ///////////////////////////////////
 
-int npcgetEmptyIndex()
-{
-    int i;
-    for (i=0 ; i <= npcBulletCount ; i++){
-        if (!NPCbulletList[i].alive)
-            return i;
-    }
-    if (i>npcBulletCount) {return -1;}
-}
-
-void createNpcBullet(int x, int y, float rad, float speed, float dir)
-{
-    npcBulletCount++;
-    npcBMaxArray++;
-    int i = npcgetEmptyIndex();
-    NPCbulletList[i].alive = true;
-    NPCbulletList[i].x = x;
-    NPCbulletList[i].y = y;
-    NPCbulletList[i].rad = rad;
-    NPCbulletList[i].speed = speed;
-    NPCbulletList[i].direction = dir;
-    NPCbulletList[i].lifeTime = 0;
-    NPCbulletList[i].birthFrame = current_frame_num;
-
-}
-
 void NPCshoot(int i, int patternID)
 {
     int frame = current_frame_num - npcList[i].lastShootFrame;
@@ -501,13 +472,13 @@ void NPCshoot(int i, int patternID)
     {
         if(patterns[patternID].type == 0){
             float dir = atan2(player1.y-npcList[i].y,player1.x-npcList[i].x) * 180/PI;
-            createNpcBullet(npcList[i].x, npcList[i].y, patterns[patternID].rad, patterns[patternID].speed, dir);
+            createBullet(npcList[i].x, npcList[i].y, patterns[patternID].rad, patterns[patternID].speed, dir, 0, 1);
         } else {
             float dir = 360/patterns[patternID].slice;
             float dir2;
             for(int j = 0; j < patterns[patternID].slice; j++){
                 dir2 = dir2 + dir;
-                createNpcBullet(npcList[i].x, npcList[i].y, patterns[patternID].rad, patterns[patternID].speed, dir2);
+                createBullet(npcList[i].x, npcList[i].y, patterns[patternID].rad, patterns[patternID].speed, dir2, 0, 1);
             }
         }
 
